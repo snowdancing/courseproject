@@ -1,0 +1,66 @@
+# download file
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "http://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+temp <- tempfile()
+download.file(fileUrl,temp)
+
+# unzip file
+unzip(temp,exdir = "./")
+unlink(temp)
+
+# read files
+setwd("./data/UCI HAR Dataset")
+stest<-read.table("test/subject_test.txt")
+xtest <- read.table ("test/X_test.txt")
+ytest <- read.table("test/Y_test.txt")
+strain<-read.table("train/subject_train.txt")
+xtrain <- read.table ("train/X_train.txt")
+ytrain <- read.table("train/Y_train.txt")
+f <- read.table("features.txt")
+a <- read.table("activity_labels.txt")
+
+# bind columns of subject_test, X_test, Y_test
+test <- cbind (xtest,stest,ytest)
+train <- cbind (xtrain,strain,ytrain)
+# change column names of last 2 columns
+colnames(test)[562:563]<- c("subject","activity")
+colnames(train)[562:563]<- c("subject","activity")
+
+# Merges the training and the test sets to create one data set
+all <- rbind(test,train)
+
+# Extracts only the measurements on the mean and standard deviation for each measurement.
+f1 <- grep("mean|std",f$V2)
+f2 <- all[,f1]
+
+# Labels the data set with descriptive variable names 
+all <- cbind(all$subject,all$activity,f2)
+colnames(all) <- c("subject","activity",t(f[f1,])[2,])
+
+# Sort data set with subject and activity
+all <- all[order(all$subject, all$activity),]
+rownames(all) <- as.character(c(1:10299))
+
+# Creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+subset <- aggregate(all, by = list(all$subject, all$activity), FUN = "mean")
+subset <- subset[,-c(1,2)]
+
+# Uses descriptive activity names to name the activities in the data set
+all$activity <- gsub("1",a[1,2],all$activity)
+all$activity <- gsub("2",a[2,2],all$activity)
+all$activity <- gsub("3",a[3,2],all$activity)
+all$activity <- gsub("4",a[4,2],all$activity)
+all$activity <- gsub("5",a[5,2],all$activity)
+all$activity <- gsub("6",a[6,2],all$activity)
+
+subset$activity <- gsub("1",a[1,2],subset$activity)
+subset$activity <- gsub("2",a[2,2],subset$activity)
+subset$activity <- gsub("3",a[3,2],subset$activity)
+subset$activity <- gsub("4",a[4,2],subset$activity)
+subset$activity <- gsub("5",a[5,2],subset$activity)
+subset$activity <- gsub("6",a[6,2],subset$activity)
+
+# Write subset to file
+write.table(subset, file="subset.csv", sep=",",row.names=FALSE)
+
+subset
